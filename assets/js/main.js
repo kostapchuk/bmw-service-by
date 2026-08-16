@@ -2,6 +2,12 @@
 (function () {
     'use strict';
 
+    /* Куда уходит заявка. Обработчик пересылает её в Telegram и держит
+       токен бота у себя — в браузер токен не попадает.
+       На bmw-service.by это server/action.php, на GitHub Pages —
+       адрес Cloudflare Worker (см. README). */
+    var FORM_ENDPOINT = 'action.php';
+
     var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     /* ---------- Шапка: фон появляется после прокрутки ---------- */
@@ -51,7 +57,7 @@
     /* ---------- Появление блоков при прокрутке ---------- */
     var revealTargets = document.querySelectorAll(
         '.sec-head, .card, .price-tile, .extra-item, .promo-flag, .promo-body, ' +
-        '.spec-item, .chips, .contact-info, .contact-form, .map-wrap, .gal-rail'
+        '.bolt, .chips, .contact-info, .contact-form, .map-wrap, .gal-rail'
     );
 
     if (!reduced && 'IntersectionObserver' in window) {
@@ -125,13 +131,19 @@
     }
 
     /* ---------- Форма заявки ----------
-       Контракт с бэкендом сохранён: POST на action.php,
-       поля user_name / user_email / text_comment, ответ вида {"result": "..."}.
+       Отправляется на FORM_ENDPOINT, оттуда уходит в Telegram.
+       Ответ обработчика: {"ok": true} либо {"ok": false, "error": "..."}.
     */
     var form = document.getElementById('bookingForm');
     if (form) {
         var messages = form.querySelector('.messages');
         var submit = document.getElementById('btn_submit');
+        var PHONE_HTML = '<a href="tel:+375295630919">+375 29 563 09 19</a>';
+
+        function say(text, kind) {
+            messages.innerHTML = text;
+            messages.className = 'messages messages--' + kind;
+        }
 
         form.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -139,50 +151,48 @@
             var userName = document.getElementById('user_name').value.trim();
             var userPhone = document.getElementById('user_email').value.trim();
             var comment = document.getElementById('text_comment').value.trim();
+            var trap = document.getElementById('form_website').value;
 
             if (!userName || !userPhone) {
-                messages.textContent = 'Укажите автомобиль и номер телефона — без них мы не сможем перезвонить.';
+                say('Укажите автомобиль и номер телефона — без них мы не сможем перезвонить.', 'error');
                 return;
             }
 
             submit.disabled = true;
             var label = submit.textContent;
             submit.textContent = 'Отправляем…';
-            messages.textContent = '';
+            say('', 'idle');
 
-            var body = new URLSearchParams({
-                user_name: userName,
-                user_email: userPhone,
-                text_comment: comment
-            });
-
-            fetch('action.php', {
+            fetch(FORM_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                body: body.toString()
+                body: new URLSearchParams({
+                    user_name: userName,
+                    user_email: userPhone,
+                    text_comment: comment,
+                    website: trap,
+                    page: location.href
+                }).toString()
             })
-                .then(function (r) { return r.json(); })
+                .then(function (r) { return r.json().catch(function () { return {}; }); })
                 .then(function (data) {
-                    messages.innerHTML = (data && data.result)
-                        ? data.result
-                        : 'Заявка отправлена. Мы перезвоним Вам.';
+                    if (!data || data.ok !== true) throw new Error('rejected');
+
+                    say('Заявка у нас в Telegram. Перезвоним в ближайшее время.', 'ok');
                     form.reset();
+
+                    /* Цель Яндекс.Метрики — та же, что и на старом сайте */
+                    try {
+                        if (window.yaCounter37073655) window.yaCounter37073655.reachGoal('ZAKAZ');
+                    } catch (err) { /* метрика не загрузилась — заявка уже ушла */ }
                 })
                 .catch(function () {
-                    messages.innerHTML = 'Не получилось отправить заявку. Позвоните нам: ' +
-                        '<a href="tel:+375295630919">+375 29 563 09 19</a>';
+                    say('Не получилось отправить заявку. Позвоните или напишите в Telegram: ' + PHONE_HTML, 'error');
                 })
                 .finally(function () {
                     submit.disabled = false;
                     submit.textContent = label;
                 });
-
-            /* Цель Яндекс.Метрики — та же, что и на старом сайте */
-            try {
-                if (window.yaCounter37073655) {
-                    window.yaCounter37073655.reachGoal('ZAKAZ');
-                }
-            } catch (err) { /* метрика не загрузилась — не мешаем отправке */ }
         });
     }
 
