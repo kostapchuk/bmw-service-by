@@ -999,18 +999,31 @@ a.info-value:hover{ color:var(--amber); }
 .site-footer{ background:var(--ink); }
 
 .footer-inner{
-    display:flex; flex-wrap:wrap; align-items:center;
+    display:flex; flex-wrap:wrap; align-items:flex-start;
     gap:clamp(18px,3vw,44px);
     padding-block:clamp(32px,4vw,52px);
 }
-.footer-brand{ display:flex; flex-direction:column; gap:4px; }
+.footer-brand{ display:flex; flex-direction:column; gap:4px; padding-top:2px; }
 .footer-brand b{
     font-family:var(--display); font-weight:800; font-size:19px;
     text-transform:uppercase; letter-spacing:.02em;
 }
 .footer-brand span{ font-size:14px; color:var(--fog-dim); }
 
-.footer-nav{ display:flex; flex-wrap:wrap; gap:8px 22px; margin-left:auto; }
+/* Две подписанные колонки вместо плоского списка ссылок:
+   так пункты не сливаются в кашу и видно, что где искать. */
+.footer-nav{
+    display:flex; flex-wrap:wrap;
+    gap:26px clamp(28px,4vw,64px);
+    margin-left:auto;
+}
+.footer-nav-group{ min-width:0; }
+.footer-nav-label{
+    font-family:var(--ui); font-size:12px; font-weight:700; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--fog-dim);
+    margin:0 0 12px;
+}
+.footer-nav ul{ list-style:none; margin:0; padding:0; display:grid; gap:9px; }
 .footer-nav a{
     font-family:var(--ui); font-size:14.5px; font-weight:500; letter-spacing:0;
     color:var(--fog); text-decoration:none;
@@ -1020,12 +1033,14 @@ a.info-value:hover{ color:var(--amber); }
 
 .footer-meta{
     display:flex; flex-direction:column; gap:5px;
+    align-self:stretch;
     font-size:14px; color:var(--fog);
     padding-left:clamp(0px,2vw,28px);
     border-left:1px solid var(--line-soft);
 }
 .footer-meta a{ text-decoration:none; }
-.footer-meta a:first-child{
+.footer-meta .footer-nav-label{ margin-bottom:7px; }
+.footer-meta a:first-of-type{
     font-family:var(--mono); font-weight:700; font-size:17px; color:var(--amber);
 }
 .footer-meta a:hover{ color:var(--chalk); }
@@ -1178,7 +1193,7 @@ a.info-value:hover{ color:var(--amber); }
 
     .map-wrap iframe{ height:320px; }
     .footer-bottom{ flex-direction:column; align-items:flex-start; }
-    .footer-nav{ gap:6px 18px; }
+    .footer-nav{ gap:22px 32px; }
 }
 
 /* =========================================================
